@@ -1,0 +1,15 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.*
+dist/
+build/
+coverage/
+.tmp/
+.DS_Store
+
+# Puppeteer caches (avoid vendored Chromium)
+.local-chromium/

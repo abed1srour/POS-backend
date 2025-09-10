@@ -1,0 +1,36 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "fix:employees-role": "node fix-employees-role.js",
+    "clear-data": "node src/scripts/clear-nonadmin-data.js",
+    "clear-data-keep-users": "node src/scripts/clear-data-keep-users.js",
+    "clear-all": "node src/scripts/clear-all-data.js",
+    "reset-db": "node src/scripts/reset-database.js",
+    "create-admin": "node src/scripts/create-admin.js",
+    "check-tables": "node src/scripts/check-tables.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "html-pdf-node": "^1.0.8",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
+    "pdfkit": "^0.17.1",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
