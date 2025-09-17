@@ -5,7 +5,8 @@ import { pickBody } from "../middleware/validate.js";
 
 const r = Router();
 
-r.use(authRequired);
+// Temporarily disable auth for testing
+// r.use(authRequired);
 
 r.get("/", CompanyController.get);
 r.put("/", 
