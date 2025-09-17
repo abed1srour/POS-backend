@@ -20,8 +20,8 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-/** CORS: read comma-separated list from CORS_ORIGIN (fallback to local dev) */
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000,http://127.0.0.1:3000")
+/** CORS: read comma-separated list from CORS_ORIGIN (fallback to local dev + Vercel) */
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000,http://127.0.0.1:3000,https://pos-frontend-9oal-theta.vercel.app")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);

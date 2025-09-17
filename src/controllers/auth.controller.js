@@ -4,6 +4,10 @@ import { AdminModel } from "../models/admin.model.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+if (!JWT_SECRET) {
+  console.error("❌ JWT_SECRET is not set in environment variables");
+}
+
 export const AuthController = {
   // Register new user
   async register(req, res) {
