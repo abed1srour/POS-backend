@@ -28,11 +28,17 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000,http:/
 
 app.use(cors({
   origin: (origin, cb) => {
+    console.log(`🌐 CORS request from origin: ${origin}`);
+    console.log(`🔍 Allowed origins: ${allowedOrigins.join(', ')}`);
+    
     if (!origin) return cb(null, true);                 // allow curl/Postman (no Origin)
     if (allowedOrigins.includes(origin)) return cb(null, true);
     return cb(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200,
 }));
 
 /** Parsers & logging */
