@@ -44,5 +44,6 @@ router.use("/settings", settingsRoutes);
 router.use("/employees", employeeRoutes);
 router.use("/invoices", invoicesRoutes);
 router.use("/company", companyRoutes);
+router.use("/company-settings", companyRoutes); // Alias for frontend compatibility
 
 export default router;
