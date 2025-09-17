@@ -1,11 +1,17 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "private": true,
+  "description": "POS API (Express + PostgreSQL)",
   "type": "module",
   "main": "src/index.js",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+
     "init-db": "node scripts/init-db.js",
     "fix:employees-role": "node fix-employees-role.js",
     "clear-data": "node src/scripts/clear-nonadmin-data.js",
@@ -14,12 +20,12 @@
     "reset-db": "node src/scripts/reset-database.js",
     "create-admin": "node src/scripts/create-admin.js",
     "check-tables": "node src/scripts/check-tables.js",
+
+    "render-build": "npm ci",
+    "render-start": "node src/index.js",
+
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -34,5 +40,12 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
-  }
+  },
+  "keywords": [
+    "express",
+    "postgres",
+    "render",
+    "pos"
+  ],
+  "author": ""
 }

@@ -1,12 +1,8 @@
 // src/config/db.js
 import pkg from "pg";
-
 const { Pool } = pkg;
 
-/**
- * Load .env only for local dev. On Render we rely on the
- * Environment tab, so we don't load .env (prevents overrides).
- */
+/** Load .env only in development (Render uses env dashboard). */
 if (process.env.NODE_ENV !== "production") {
   const { default: dotenv } = await import("dotenv");
   dotenv.config();
@@ -16,10 +12,9 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-/**
- * Render’s managed Postgres requires SSL. node-postgres does not
- * honor ?sslmode=require in the URL, so we must pass an `ssl` option.
- * Locally we usually don’t use SSL.
+/** 
+ * Render’s Postgres uses SSL with a managed cert.
+ * node-postgres ignores ?sslmode=require in the URL, so pass `ssl` explicitly.
  */
 const isProd =
   process.env.NODE_ENV === "production" ||
@@ -32,7 +27,9 @@ export const pool = new Pool({
   idleTimeoutMillis: Number(process.env.PG_IDLE || 30000),
 });
 
-// Optional: quick connection test & helpful logging
+export const query = (text, params) => pool.query(text, params);
+
+/** Optional boot probe (nice in Render logs). */
 (async () => {
   try {
     const { rows } = await pool.query("select now()");
@@ -42,15 +39,9 @@ export const pool = new Pool({
   }
 })();
 
-pool.on("error", (err) => {
-  console.error("❌ PG Pool error:", err);
-});
-
+/** Helpful pool error logs & graceful shutdown */
+pool.on("error", (err) => console.error("❌ PG Pool error:", err));
 process.on("SIGINT", async () => {
-  try {
-    await pool.end();
-    console.log("👋 PG pool closed");
-  } finally {
-    process.exit(0);
-  }
+  try { await pool.end(); console.log("👋 PG pool closed"); }
+  finally { process.exit(0); }
 });
