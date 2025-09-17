@@ -23,7 +23,7 @@ const router = Router();
 router.use("/auth", authRoutes);
 
 // Protected routes (authentication required)
-// Temporarily commented out for testing
+// Temporarily disabled for testing - ENABLE THIS IN PRODUCTION
 // router.use(authRequired);
 
 // Dashboard routes
