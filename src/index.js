@@ -1,95 +1,86 @@
+// src/index.js
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { pool } from "./config/db.js";
 import routes from "./routes/index.js";
 import { scheduleCleanup } from "./utils/cleanup.js";
 
-dotenv.config();
+// Load .env only in development; Render provides env vars via dashboard
+if (process.env.NODE_ENV !== "production") {
+  const { default: dotenv } = await import("dotenv");
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Validate required environment variables
+// ==== Required envs check ====
 if (!process.env.DATABASE_URL) {
-  console.error("❌ DATABASE_URL environment variable is required");
-  console.error("🔍 Please set DATABASE_URL in your environment variables");
+  console.error("❌ DATABASE_URL is required. Set it in your environment.");
   process.exit(1);
 }
 
-console.log("🔧 Environment check:");
-console.log("📍 PORT:", PORT);
-console.log("🗄️ DATABASE_URL:", process.env.DATABASE_URL ? "Set" : "Not set");
-console.log("🔐 JWT_SECRET:", process.env.JWT_SECRET ? "Set" : "Not set");
+// ==== CORS ====
+/**
+ * Accept comma-separated list in CORS_ORIGIN, e.g.
+ * CORS_ORIGIN=http://localhost:3000,https://my-frontend.onrender.com
+ * Fallbacks allow local dev.
+ */
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000,http://127.0.0.1:3000")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
 
-// CORS configuration
-const corsOptions = {
-  origin: [
-    "http://localhost:3000", 
-    "http://127.0.0.1:3000",
-    process.env.FRONTEND_URL || "http://localhost:3000"
-  ],
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);                 // allow curl/Postman (no Origin)
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`Not allowed by CORS: ${origin}`));
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
+}));
 
-app.use(cors(corsOptions));
-
-// Body parsers
+// ==== Parsers & logging ====
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logger
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
-// Health check
-app.get("/health", async (req, res) => {
+// ==== Health ====
+app.get("/health", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
-    res.json({
-      status: "OK",
-      timestamp: new Date().toISOString(),
-      database: "connected"
-    });
-  } catch (error) {
-    res.json({
-      status: "OK",
-      timestamp: new Date().toISOString(),
-      database: "disconnected",
-      message: "Server running but database not connected"
-    });
+    res.json({ status: "OK", database: "connected", timestamp: new Date().toISOString() });
+  } catch {
+    // Keep 200 so Render health check passes even if DB is momentarily down.
+    res.json({ status: "OK", database: "disconnected", timestamp: new Date().toISOString() });
   }
 });
 
-// API routes
+app.get("/", (_req, res) => res.send("POS API up"));
+
+// ==== Routes ====
 app.use("/api", routes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
+// ==== 404 ====
+app.use((_req, res) => res.status(404).json({ message: "Route not found" }));
 
-// Error handler
-app.use((error, req, res, next) => {
-  console.error("Error:", error);
+// ==== Error handler ====
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled error:", err);
   res.status(500).json({ message: "Internal server error" });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
-🚀 POS System API Server Started!
-📍 Port: ${PORT}
-🌐 Server: http://0.0.0.0:${PORT}
-📊 Health: http://0.0.0.0:${PORT}/health
-⏰ Started: ${new Date().toISOString()}
-  `);
-  
-  // Start the cleanup scheduler
+// ==== Start ====
+app.listen(PORT, "0.0.0.0", () => {
+  const started = new Date().toISOString();
+  console.log(`🚀 POS System API Server Started!`);
+  console.log(`📍 Port: ${PORT}`);
+  console.log(`📊 Health: /health`);
+  console.log(`⏰ Started: ${started}`);
   scheduleCleanup();
 });
 

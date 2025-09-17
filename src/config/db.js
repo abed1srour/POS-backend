@@ -1,57 +1,51 @@
 // src/config/db.js
 import pkg from "pg";
-import dotenv from "dotenv";
-dotenv.config();
 
 const { Pool } = pkg;
 
 /**
- * DATABASE_URL example:
- * postgresql://postgres:yourpassword@localhost:5432/store_management
- *
- * Optional env:
- * PGSSL=require            // for cloud DBs (set to 'require' or 'true')
- * PG_MAX=10                // pool size
- * PG_IDLE=30000            // idle timeout ms
+ * Load .env only for local dev. On Render we rely on the
+ * Environment tab, so we don't load .env (prevents overrides).
  */
-
-// Determine SSL configuration
-let sslConfig;
-if (process.env.NODE_ENV === 'production' || process.env.PGSSL) {
-  // For production/cloud environments, enable SSL with certificate validation disabled
-  sslConfig = { rejectUnauthorized: false };
-} else {
-  // For local development, disable SSL
-  sslConfig = false;
+if (process.env.NODE_ENV !== "production") {
+  const { default: dotenv } = await import("dotenv");
+  dotenv.config();
 }
 
-console.log("🔐 SSL Configuration:", sslConfig ? "Enabled (rejectUnauthorized: false)" : "Disabled");
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
+
+/**
+ * Render’s managed Postgres requires SSL. node-postgres does not
+ * honor ?sslmode=require in the URL, so we must pass an `ssl` option.
+ * Locally we usually don’t use SSL.
+ */
+const isProd =
+  process.env.NODE_ENV === "production" ||
+  (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost"));
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: isProd ? { rejectUnauthorized: false } : false,
   max: Number(process.env.PG_MAX || 10),
   idleTimeoutMillis: Number(process.env.PG_IDLE || 30000),
-  ssl: sslConfig,
 });
 
-// One-time connect test (optional)
-pool.connect()
-  .then((client) => {
-    console.log("🔌 PostgreSQL connected successfully");
-    client.release();
-  })
-  .catch((err) => {
+// Optional: quick connection test & helpful logging
+(async () => {
+  try {
+    const { rows } = await pool.query("select now()");
+    console.log("🔌 PostgreSQL connected. Server time:", rows[0].now);
+  } catch (err) {
     console.error("❌ PostgreSQL connection error:", err.message);
-    console.error("🔍 Check your DATABASE_URL environment variable");
-    console.error("📋 Current DATABASE_URL:", process.env.DATABASE_URL ? "Set" : "Not set");
-  });
+  }
+})();
 
-// Helpful event logs
 pool.on("error", (err) => {
   console.error("❌ PG Pool error:", err);
 });
 
-// Graceful shutdown
 process.on("SIGINT", async () => {
   try {
     await pool.end();
