@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "init-db": "node scripts/init-db.js",
     "fix:employees-role": "node fix-employees-role.js",
     "clear-data": "node src/scripts/clear-nonadmin-data.js",
     "clear-data-keep-users": "node src/scripts/clear-data-keep-users.js",

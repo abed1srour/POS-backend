@@ -10,9 +10,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Validate required environment variables
+if (!process.env.DATABASE_URL) {
+  console.error("❌ DATABASE_URL environment variable is required");
+  console.error("🔍 Please set DATABASE_URL in your environment variables");
+  process.exit(1);
+}
+
+console.log("🔧 Environment check:");
+console.log("📍 PORT:", PORT);
+console.log("🗄️ DATABASE_URL:", process.env.DATABASE_URL ? "Set" : "Not set");
+console.log("🔐 JWT_SECRET:", process.env.JWT_SECRET ? "Set" : "Not set");
+
 // CORS configuration
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  origin: [
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000",
+    process.env.FRONTEND_URL || "http://localhost:3000"
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -64,12 +80,12 @@ app.use((error, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`
 🚀 POS System API Server Started!
 📍 Port: ${PORT}
-🌐 Server: http://localhost:${PORT}
-📊 Health: http://localhost:${PORT}/health
+🌐 Server: http://0.0.0.0:${PORT}
+📊 Health: http://0.0.0.0:${PORT}/health
 ⏰ Started: ${new Date().toISOString()}
   `);
   

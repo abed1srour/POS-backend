@@ -14,25 +14,36 @@ const { Pool } = pkg;
  * PG_MAX=10                // pool size
  * PG_IDLE=30000            // idle timeout ms
  */
-const sslEnabled =
-  (process.env.PGSSL?.toLowerCase() === "require") ||
-  (process.env.PGSSL?.toLowerCase() === "true");
+
+// Determine SSL configuration
+let sslConfig;
+if (process.env.NODE_ENV === 'production' || process.env.PGSSL) {
+  // For production/cloud environments, enable SSL with certificate validation disabled
+  sslConfig = { rejectUnauthorized: false };
+} else {
+  // For local development, disable SSL
+  sslConfig = false;
+}
+
+console.log("🔐 SSL Configuration:", sslConfig ? "Enabled (rejectUnauthorized: false)" : "Disabled");
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: Number(process.env.PG_MAX || 10),
   idleTimeoutMillis: Number(process.env.PG_IDLE || 30000),
-  ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
+  ssl: sslConfig,
 });
 
 // One-time connect test (optional)
 pool.connect()
   .then((client) => {
-    console.log("🔌 PostgreSQL connected");
+    console.log("🔌 PostgreSQL connected successfully");
     client.release();
   })
   .catch((err) => {
     console.error("❌ PostgreSQL connection error:", err.message);
+    console.error("🔍 Check your DATABASE_URL environment variable");
+    console.error("📋 Current DATABASE_URL:", process.env.DATABASE_URL ? "Set" : "Not set");
   });
 
 // Helpful event logs
