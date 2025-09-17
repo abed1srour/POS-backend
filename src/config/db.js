@@ -13,51 +13,30 @@ if (!process.env.DATABASE_URL) {
 }
 
 /** 
- * FORCE SSL OFF - Testing to resolve certificate issues
- * We'll debug why SSL keeps causing problems
+ * Render PostgreSQL REQUIRES SSL - Enable it with proper certificate handling
  */
 console.log("🔧 Debug Info:");
 console.log("  NODE_ENV:", process.env.NODE_ENV || "undefined");
 console.log("  DATABASE_URL starts with:", process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 20) + "..." : "undefined");
 
-// COMPLETELY DISABLE SSL FOR TESTING
-const sslConfig = false;
-console.log("🔐 SSL Configuration: FORCED OFF");
+// Enable SSL with proper configuration for Render
+const sslConfig = {
+  rejectUnauthorized: false,  // Accept self-signed certificates
+  require: true,              // Require SSL connection
+};
 
-// Remove any SSL parameters from the DATABASE_URL
-let cleanDatabaseUrl = process.env.DATABASE_URL;
-if (cleanDatabaseUrl) {
-  // Remove common SSL parameters that might be in the URL
-  cleanDatabaseUrl = cleanDatabaseUrl.replace(/[?&]sslmode=[^&]*/gi, '');
-  cleanDatabaseUrl = cleanDatabaseUrl.replace(/[?&]ssl=[^&]*/gi, '');
-  cleanDatabaseUrl = cleanDatabaseUrl.replace(/[?&]sslcert=[^&]*/gi, '');
-  cleanDatabaseUrl = cleanDatabaseUrl.replace(/[?&]sslkey=[^&]*/gi, '');
-  cleanDatabaseUrl = cleanDatabaseUrl.replace(/[?&]sslrootcert=[^&]*/gi, '');
-  
-  // Clean up any remaining ? or & at the end
-  cleanDatabaseUrl = cleanDatabaseUrl.replace(/[?&]$/, '');
-  
-  if (cleanDatabaseUrl !== process.env.DATABASE_URL) {
-    console.log("🧹 Cleaned SSL parameters from DATABASE_URL");
-  }
-}
+console.log("🔐 SSL Configuration: ENABLED with certificate acceptance");
 
-// Try multiple approaches to disable SSL
 const poolConfig = {
-  connectionString: cleanDatabaseUrl,
-  ssl: false,  // Explicitly false
+  connectionString: process.env.DATABASE_URL,
+  ssl: sslConfig,
   max: Number(process.env.PG_MAX || 10),
   idleTimeoutMillis: Number(process.env.PG_IDLE || 30000),
 };
 
-// Set additional environment variables to force SSL off
-process.env.PGSSLMODE = 'disable';
-process.env.PGSSL = 'false';
-
 console.log("🔧 Pool config:", {
   ssl: poolConfig.ssl,
-  PGSSLMODE: process.env.PGSSLMODE,
-  PGSSL: process.env.PGSSL
+  connectionString: poolConfig.connectionString ? "Set" : "Not set"
 });
 
 export const pool = new Pool(poolConfig);
