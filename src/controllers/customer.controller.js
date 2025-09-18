@@ -66,14 +66,14 @@ export const CustomerController = {
   // Create new customer
   async create(req, res) {
     try {
-      const { first_name, last_name, address, phone_number, join_date } = req.body;
+      const { first_name, last_name, email, phone_number, address, city, state, zip_code, country } = req.body;
 
       if (!first_name || !last_name) {
         return res.status(400).json({ message: "First name and last name are required" });
       }
 
       const customer = await CustomerModel.create({ 
-        first_name, last_name, address, phone_number, join_date 
+        first_name, last_name, email, phone_number, address, city, state, zip_code, country
       });
 
       res.status(201).json({
