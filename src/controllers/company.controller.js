@@ -5,7 +5,7 @@ export const CompanyController = {
   async get(req, res) {
     try {
       const { rows } = await pool.query(`
-        SELECT * FROM company ORDER BY id LIMIT 1
+        SELECT * FROM company_settings ORDER BY id LIMIT 1
       `);
       
       const company = rows[0];
@@ -32,7 +32,7 @@ export const CompanyController = {
       } = req.body;
 
       const { rows } = await pool.query(`
-        SELECT id FROM company ORDER BY id LIMIT 1
+        SELECT id FROM company_settings ORDER BY id LIMIT 1
       `);
       
       let company;
