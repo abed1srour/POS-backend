@@ -73,7 +73,16 @@ export const CustomerController = {
       }
 
       const customer = await CustomerModel.create({ 
-        first_name, last_name, email, phone_number, address, city, state, zip_code, country
+        name: `${first_name} ${last_name}`, // Required field
+        first_name, 
+        last_name, 
+        email, 
+        phone_number, 
+        address, 
+        city, 
+        state, 
+        zip_code, 
+        country
       });
 
       res.status(201).json({
