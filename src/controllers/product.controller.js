@@ -5,7 +5,7 @@ import { formatResultIds, formatId } from "../utils/id-formatter.js";
 
 const ProductModel = BaseModel({
   table: "products",
-  allowed: ["name", "description", "price", "cost_price", "quantity_in_stock", "category_id", "supplier_id", "reorder_level", "image_url", "sku", "barcode", "status"]
+  allowed: ["name", "description", "price", "cost", "cost_price", "stock_quantity", "quantity_in_stock", "min_stock_level", "category_id", "supplier_id", "reorder_level", "image_url", "sku", "barcode", "status", "is_active"]
 });
 
 export const ProductController = {
@@ -15,7 +15,8 @@ export const ProductController = {
       const { limit = 50, offset = 0, category_id, q, sort = "id", order = "desc", includeDeleted = false } = req.query;
       
       let query = `
-        SELECT p.*, c.name as category_name, s.company_name as supplier_name 
+        SELECT p.*, c.name as category_name, 
+               COALESCE(s.company_name, s.name) as supplier_name 
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id 
         LEFT JOIN suppliers s ON p.supplier_id = s.id 
@@ -52,17 +53,58 @@ export const ProductController = {
 
       const { rows } = await pool.query(query, params);
       
+      // Get total count for pagination
+      let countQuery = `
+        SELECT COUNT(*) as total
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id 
+        LEFT JOIN suppliers s ON p.supplier_id = s.id 
+        WHERE 1=1
+      `;
+      
+      // Apply same filters for count
+      if (includeDeleted === 'true') {
+        countQuery += ` AND p.deleted_at IS NOT NULL`;
+      } else {
+        countQuery += ` AND p.deleted_at IS NULL`;
+      }
+      
+      if (category_id) {
+        countQuery += ` AND p.category_id = $${params.length + 1}`;
+      }
+      
+      if (q) {
+        countQuery += ` AND (p.name ILIKE $${params.length + (category_id ? 2 : 1)} OR p.description ILIKE $${params.length + (category_id ? 2 : 1)} OR p.sku ILIKE $${params.length + (category_id ? 2 : 1)} OR p.barcode ILIKE $${params.length + (category_id ? 2 : 1)})`;
+      }
+      
+      const countParams = [...params];
+      if (category_id) countParams.push(category_id);
+      if (q) countParams.push(`%${q}%`);
+      
+      const { rows: countResult } = await pool.query(countQuery, countParams);
+      const total = parseInt(countResult[0].total);
+      
       // Transform data to match frontend expectations
       const transformedRows = rows.map(row => ({
         ...row,
-        stock: row.quantity_in_stock, // Map quantity_in_stock to stock for frontend
-        cost: row.cost_price, // Map cost_price to cost for frontend
+        stock: row.quantity_in_stock || row.stock_quantity || 0, // Map stock fields to stock for frontend
+        cost: row.cost_price || row.cost, // Map cost fields to cost for frontend
+        supplier_id: row.supplier_id, // Ensure supplier_id is included
+        supplier_name: row.supplier_name || null, // Preserve supplier_name from JOIN, convert "null" string to null
+        category_name: row.category_name, // Preserve category_name from JOIN
         display_id: formatId('products', row.id) // Add formatted display ID
       }));
       
       res.json({
         message: "Products retrieved successfully",
-        data: transformedRows
+        data: transformedRows,
+        pagination: {
+          total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: Math.floor(parseInt(offset) / parseInt(limit)) + 1,
+          pages: Math.ceil(total / parseInt(limit))
+        }
       });
     } catch (error) {
       console.error("List products error:", error);
@@ -76,7 +118,8 @@ export const ProductController = {
       const { id } = req.params;
       
       const { rows } = await pool.query(`
-        SELECT p.*, c.name as category_name, s.company_name as supplier_name 
+        SELECT p.*, c.name as category_name, 
+               COALESCE(s.company_name, s.name) as supplier_name 
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id 
         LEFT JOIN suppliers s ON p.supplier_id = s.id 
@@ -91,8 +134,11 @@ export const ProductController = {
       // Transform data to match frontend expectations
       const transformedProduct = {
         ...product,
-        stock: product.quantity_in_stock, // Map quantity_in_stock to stock for frontend
-        cost: product.cost_price, // Map cost_price to cost for frontend
+        stock: product.quantity_in_stock || product.stock_quantity || 0, // Map stock fields to stock for frontend
+        cost: product.cost_price || product.cost, // Map cost fields to cost for frontend
+        supplier_id: product.supplier_id, // Ensure supplier_id is included
+        supplier_name: product.supplier_name || null, // Preserve supplier_name from JOIN, convert "null" string to null
+        category_name: product.category_name, // Preserve category_name from JOIN
         display_id: formatId('products', product.id) // Add formatted display ID
       };
 
@@ -129,19 +175,21 @@ export const ProductController = {
       }
 
       // Map frontend field names to database field names
-      // Database schema: name, description, price, cost, stock_quantity, min_stock_level, category_id, barcode, sku, is_active
+      // Database schema: name, description, price, cost, stock_quantity, min_stock_level, category_id, barcode, sku, is_active, supplier_id, quantity_in_stock, cost_price
       const productData = {
         name,
         description,
         price,
         cost: cost !== undefined && cost !== null ? cost : price, // Use cost if provided, otherwise use price
-        stock_quantity: stock, // Map stock to stock_quantity (database field)
+        cost_price: cost !== undefined && cost !== null ? cost : price, // Also set cost_price field
+        stock_quantity: stock || 0, // Map stock to stock_quantity (database field)
+        quantity_in_stock: stock || 0, // Also set quantity_in_stock field
         min_stock_level: 10, // Default minimum stock level
-        category_id: category_id || null,
+        category_id: category_id ? parseInt(category_id) : null, // Convert to integer
+        supplier_id: supplier_id ? parseInt(supplier_id) : null, // Convert to integer and include supplier_id
         sku: sku || null,
         barcode: barcode || null,
         is_active: status === 'active' || status === undefined || status === null // Map status to is_active
-        // Note: supplier_id is not in the current database schema
       };
 
 
@@ -151,10 +199,11 @@ export const ProductController = {
       // Transform response to match frontend expectations
       const transformedProduct = {
         ...product,
-        stock: product.stock_quantity, // Map stock_quantity back to stock for frontend
-        cost_price: product.cost, // Map cost back to cost_price for frontend
-        quantity_in_stock: product.stock_quantity, // Also provide quantity_in_stock for frontend
+        stock: product.stock_quantity || product.quantity_in_stock || 0, // Map stock_quantity back to stock for frontend
+        cost_price: product.cost_price || product.cost, // Preserve cost_price field
+        quantity_in_stock: product.quantity_in_stock || product.stock_quantity || 0, // Preserve quantity_in_stock field
         status: product.is_active ? 'active' : 'inactive', // Map is_active back to status
+        supplier_id: product.supplier_id, // Ensure supplier_id is included
         display_id: formatId('products', product.id) // Add formatted display ID
       };
 
@@ -201,15 +250,18 @@ export const ProductController = {
       }
 
       // Map frontend field names to database field names
-      // Database schema: name, description, price, cost, stock_quantity, min_stock_level, category_id, barcode, sku, is_active
+      // Database schema: name, description, price, cost, stock_quantity, min_stock_level, category_id, barcode, sku, is_active, supplier_id, quantity_in_stock, cost_price
       const productData = {
         name,
         description,
         price,
         cost: cost || cost_price || price, // Use cost/cost_price if provided, otherwise use price
+        cost_price: cost || cost_price || price, // Also set cost_price field
         stock_quantity: stock || quantity_in_stock || 0, // Map stock/quantity_in_stock to stock_quantity
+        quantity_in_stock: stock || quantity_in_stock || 0, // Also set quantity_in_stock field
         min_stock_level: reorder_level || 10, // Map reorder_level to min_stock_level
-        category_id: category_id || null,
+        category_id: category_id ? parseInt(category_id) : null, // Convert to integer
+        supplier_id: supplier_id ? parseInt(supplier_id) : null, // Convert to integer and include supplier_id
         sku: sku || null,
         barcode: barcode || null,
         is_active: status === 'active' || status === undefined || status === null // Map status to is_active

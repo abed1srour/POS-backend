@@ -28,6 +28,11 @@
     "add-missing": "node scripts/add-missing-columns.js",
     "migrate-to-numeric": "node scripts/migrate-to-numeric-ids.js",
     "analyze-uuids": "node scripts/analyze-uuid-usage.js",
+    "check-products": "node scripts/check-products-table.js",
+    "test-product": "node scripts/test-product-creation.js",
+    "debug-products": "node scripts/debug-product-api.js",
+    "fix-products": "node scripts/fix-product-data.js",
+    "add-test-stock": "node scripts/add-test-stock.js",
 
     "render-build": "npm ci",
     "render-start": "node src/index.js",
