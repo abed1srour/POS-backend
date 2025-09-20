@@ -5,17 +5,17 @@ export const Product = {
   ...BaseModel({
     table: "products",
     allowed: [
-      "name","description","category_id","price","cost_price",
-      "quantity_in_stock","reorder_level","image_url","supplier_id","created_at","updated_at"
+      "name","description","category_id","price","cost",
+      "stock_quantity","min_stock_level","barcode","sku","is_active","created_at","updated_at"
     ]
   }),
 
   async decrementStock(productId, qty) {
     const { rows } = await pool.query(
       `UPDATE products
-       SET quantity_in_stock = quantity_in_stock - $1,
+       SET stock_quantity = stock_quantity - $1,
            updated_at = NOW()
-       WHERE id = $2 AND quantity_in_stock >= $1
+       WHERE id = $2 AND stock_quantity >= $1
        RETURNING *`,
       [qty, productId]
     );
@@ -25,7 +25,7 @@ export const Product = {
   async incrementStock(productId, qty) {
     const { rows } = await pool.query(
       `UPDATE products
-       SET quantity_in_stock = quantity_in_stock + $1,
+       SET stock_quantity = stock_quantity + $1,
            updated_at = NOW()
        WHERE id = $2
        RETURNING *`,
@@ -44,7 +44,7 @@ export const Product = {
     
     // Get current product data
     const { rows: productRows } = await useClient.query(
-      `SELECT quantity_in_stock, cost_price, price FROM products WHERE id = $1`,
+      `SELECT stock_quantity, cost, price FROM products WHERE id = $1`,
       [productId]
     );
 
@@ -53,8 +53,8 @@ export const Product = {
     }
 
     const currentProduct = productRows[0];
-    const currentQuantity = parseFloat(currentProduct.quantity_in_stock || 0);
-    const currentCostPrice = parseFloat(currentProduct.cost_price || 0);
+    const currentQuantity = parseFloat(currentProduct.stock_quantity || 0);
+    const currentCostPrice = parseFloat(currentProduct.cost || 0);
     const currentPrice = parseFloat(currentProduct.price || 0);
 
     // Calculate weighted average cost
@@ -93,8 +93,8 @@ export const Product = {
     // Update product with new stock and average prices
     const { rows: updatedRows } = await useClient.query(
       `UPDATE products
-       SET quantity_in_stock = quantity_in_stock + $1,
-           cost_price = $2,
+       SET stock_quantity = stock_quantity + $1,
+           cost = $2,
            price = $3,
            updated_at = NOW()
        WHERE id = $4

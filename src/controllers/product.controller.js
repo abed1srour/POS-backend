@@ -128,18 +128,19 @@ export const ProductController = {
       }
 
       // Map frontend field names to database field names
+      // Database schema: name, description, price, cost, stock_quantity, min_stock_level, category_id, barcode, sku, is_active
       const productData = {
         name,
         description,
         price,
-        cost_price: cost !== undefined && cost !== null ? cost : price, // Use cost if provided, otherwise use price
-        quantity_in_stock: stock, // Map stock to quantity_in_stock
+        cost: cost !== undefined && cost !== null ? cost : price, // Use cost if provided, otherwise use price
+        stock_quantity: stock, // Map stock to stock_quantity (database field)
+        min_stock_level: 10, // Default minimum stock level
         category_id: category_id || null,
-        supplier_id: supplier_id || null,
-        reorder_level: 10, // Default reorder level
         sku: sku || null,
         barcode: barcode || null,
-        status: status || 'active'
+        is_active: status === 'active' || status === undefined || status === null // Map status to is_active
+        // Note: supplier_id is not in the current database schema
       };
 
       console.log("🗄️  Product data to insert:", productData);
@@ -151,8 +152,10 @@ export const ProductController = {
       // Transform response to match frontend expectations
       const transformedProduct = {
         ...product,
-        stock: product.quantity_in_stock,
-        cost: product.cost_price
+        stock: product.stock_quantity, // Map stock_quantity back to stock for frontend
+        cost_price: product.cost, // Map cost back to cost_price for frontend
+        quantity_in_stock: product.stock_quantity, // Also provide quantity_in_stock for frontend
+        status: product.is_active ? 'active' : 'inactive' // Map is_active back to status
       };
 
       res.status(201).json({
@@ -198,16 +201,18 @@ export const ProductController = {
       }
 
       // Map frontend field names to database field names
+      // Database schema: name, description, price, cost, stock_quantity, min_stock_level, category_id, barcode, sku, is_active
       const productData = {
         name,
         description,
         price,
         cost: cost || cost_price || price, // Use cost/cost_price if provided, otherwise use price
         stock_quantity: stock || quantity_in_stock || 0, // Map stock/quantity_in_stock to stock_quantity
+        min_stock_level: reorder_level || 10, // Map reorder_level to min_stock_level
         category_id: category_id || null,
         sku: sku || null,
-        barcode: barcode || null
-        // Note: supplier_id, status, reorder_level, image_url are not in the current database schema
+        barcode: barcode || null,
+        is_active: status === 'active' || status === undefined || status === null // Map status to is_active
       };
 
       const product = await ProductModel.update(id, productData);
@@ -215,9 +220,10 @@ export const ProductController = {
       // Transform response to match frontend expectations
       const transformedProduct = {
         ...product,
-        stock: product.stock_quantity,
-        cost_price: product.cost,
-        quantity_in_stock: product.stock_quantity
+        stock: product.stock_quantity, // Map stock_quantity back to stock for frontend
+        cost_price: product.cost, // Map cost back to cost_price for frontend
+        quantity_in_stock: product.stock_quantity, // Also provide quantity_in_stock for frontend
+        status: product.is_active ? 'active' : 'inactive' // Map is_active back to status
       };
 
       res.json({
