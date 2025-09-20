@@ -137,7 +137,7 @@ export const PurchaseOrderController = {
       // Get purchase order items
       const { rows: itemRows } = await pool.query(`
         SELECT poi.*, p.name as product_name, p.price as product_price,
-               (poi.quantity * poi.unit_price - COALESCE(poi.discount_amount, 0)) as total_price
+               (poi.quantity * poi.unit_cost - COALESCE(poi.discount_amount, 0)) as total_price
         FROM purchase_order_items poi
         LEFT JOIN products p ON poi.product_id = p.id
         WHERE poi.purchase_order_id = $1
@@ -315,14 +315,14 @@ export const PurchaseOrderController = {
 
           // Get purchase order items with unit prices
           const { rows: itemRows } = await client.query(`
-            SELECT poi.product_id, poi.quantity, poi.unit_price 
+            SELECT poi.product_id, poi.quantity, poi.unit_cost 
             FROM purchase_order_items poi
             WHERE poi.purchase_order_id = $1
           `, [id]);
 
           // Update stock for each item using weighted average cost
           for (const item of itemRows) {
-            const newCostPrice = parseFloat(item.unit_price);
+            const newCostPrice = parseFloat(item.unit_cost);
             const newQuantity = parseInt(item.quantity);
             
             // Use the new weighted average cost method
@@ -347,7 +347,7 @@ export const PurchaseOrderController = {
 
           // Get purchase order items
           const { rows: itemRows } = await client.query(`
-            SELECT poi.product_id, poi.quantity, poi.unit_price, p.name as product_name, p.quantity_in_stock
+            SELECT poi.product_id, poi.quantity, poi.unit_cost, p.name as product_name, p.quantity_in_stock
             FROM purchase_order_items poi
             LEFT JOIN products p ON poi.product_id = p.id
             WHERE poi.purchase_order_id = $1
@@ -470,7 +470,7 @@ export const PurchaseOrderController = {
 
       // Get purchase order items to handle product deletion/reduction
       const { rows: itemRows } = await client.query(`
-        SELECT poi.product_id, poi.quantity, poi.unit_price, p.name as product_name, p.quantity_in_stock,
+        SELECT poi.product_id, poi.quantity, poi.unit_cost, p.name as product_name, p.quantity_in_stock,
                (SELECT COUNT(*) FROM purchase_order_items poi2 
                   WHERE poi2.product_id = poi.product_id AND poi2.purchase_order_id != $1) as other_orders_count,
                (SELECT COUNT(*) FROM order_items oi 
