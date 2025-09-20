@@ -2,7 +2,7 @@ import { BaseModel } from "./_base.js";
 
 const baseModel = BaseModel({
   table: "suppliers",
-  allowed: ["company_name","contact_person","phone","address"]
+  allowed: ["name","contact_person","phone","address"]
 });
 
 export const Supplier = {

@@ -11,9 +11,15 @@ export const SupplierController = {
         includeDeleted: includeDeleted === 'true'
       });
       
+      // Transform response to match frontend expectations
+      const transformedSuppliers = suppliers.map(supplier => ({
+        ...supplier,
+        company_name: supplier.name // Map name to company_name for frontend
+      }));
+      
       res.json({
         message: "Suppliers retrieved successfully",
-        data: suppliers
+        data: transformedSuppliers
       });
     } catch (error) {
       console.error("List suppliers error:", error);
@@ -31,9 +37,15 @@ export const SupplierController = {
         return res.status(404).json({ message: "Supplier not found" });
       }
 
+      // Transform response to match frontend expectations
+      const transformedSupplier = {
+        ...supplier,
+        company_name: supplier.name // Map name to company_name for frontend
+      };
+
       res.json({
         message: "Supplier retrieved successfully",
-        data: supplier
+        data: transformedSupplier
       });
     } catch (error) {
       console.error("Get supplier error:", error);
@@ -50,13 +62,25 @@ export const SupplierController = {
         return res.status(400).json({ message: "Company name and contact person are required" });
       }
 
-      const supplier = await Supplier.create({ 
-        company_name, contact_person, phone, address 
-      });
+      // Map frontend field names to database field names
+      const supplierData = {
+        name: company_name, // Map company_name to name (database field)
+        contact_person,
+        phone,
+        address
+      };
+
+      const supplier = await Supplier.create(supplierData);
+
+      // Transform response to match frontend expectations
+      const transformedSupplier = {
+        ...supplier,
+        company_name: supplier.name // Map name back to company_name for frontend
+      };
 
       res.status(201).json({
         message: "Supplier created successfully",
-        data: supplier
+        data: transformedSupplier
       });
     } catch (error) {
       console.error("Create supplier error:", error);
@@ -75,13 +99,25 @@ export const SupplierController = {
         return res.status(404).json({ message: "Supplier not found" });
       }
 
-      const supplier = await Supplier.update(id, { 
-        company_name, contact_person, phone, address 
-      });
+      // Map frontend field names to database field names
+      const supplierData = {
+        name: company_name, // Map company_name to name (database field)
+        contact_person,
+        phone,
+        address
+      };
+
+      const supplier = await Supplier.update(id, supplierData);
+
+      // Transform response to match frontend expectations
+      const transformedSupplier = {
+        ...supplier,
+        company_name: supplier.name // Map name back to company_name for frontend
+      };
 
       res.json({
         message: "Supplier updated successfully",
-        data: supplier
+        data: transformedSupplier
       });
     } catch (error) {
       console.error("Update supplier error:", error);
@@ -119,9 +155,15 @@ export const SupplierController = {
         offset: parseInt(offset) 
       });
       
+      // Transform response to match frontend expectations
+      const transformedSuppliers = suppliers.map(supplier => ({
+        ...supplier,
+        company_name: supplier.name // Map name to company_name for frontend
+      }));
+      
       res.json({
         message: "Deleted suppliers retrieved successfully",
-        data: suppliers
+        data: transformedSuppliers
       });
     } catch (error) {
       console.error("Get deleted suppliers error:", error);
@@ -145,9 +187,15 @@ export const SupplierController = {
 
       const supplier = await Supplier.restore(id);
 
+      // Transform response to match frontend expectations
+      const transformedSupplier = {
+        ...supplier,
+        company_name: supplier.name // Map name to company_name for frontend
+      };
+
       res.json({
         message: "Supplier restored successfully",
-        data: supplier
+        data: transformedSupplier
       });
     } catch (error) {
       console.error("Restore supplier error:", error);
