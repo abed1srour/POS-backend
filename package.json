@@ -20,6 +20,12 @@
     "reset-db": "node src/scripts/reset-database.js",
     "create-admin": "node src/scripts/create-admin.js",
     "check-tables": "node src/scripts/check-tables.js",
+    "migrate": "node scripts/run-migration.js",
+    "check-schema": "node scripts/quick-schema-check.js",
+    "validate-schema": "node scripts/validate-schema.js",
+    "find-columns": "node scripts/find-column-references.js",
+    "check-missing": "node scripts/focused-column-check.js",
+    "add-missing": "node scripts/add-missing-columns.js",
 
     "render-build": "npm ci",
     "render-start": "node src/index.js",

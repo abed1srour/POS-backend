@@ -21,12 +21,12 @@ export const PurchaseOrderController = {
       if (status) {
         paramCount++;
         if (status === 'paid') {
-          whereClause += ` AND po.total <= COALESCE((
+          whereClause += ` AND po.total_amount <= COALESCE((
             SELECT SUM(amount) FROM payments 
             WHERE purchase_order_id = po.id AND deleted_at IS NULL AND status = 'completed'
           ), 0)`;
         } else if (status === 'unpaid') {
-          whereClause += ` AND po.total > COALESCE((
+          whereClause += ` AND po.total_amount > COALESCE((
             SELECT SUM(amount) FROM payments 
             WHERE purchase_order_id = po.id AND deleted_at IS NULL AND status = 'completed'
           ), 0)`;
@@ -85,7 +85,7 @@ export const PurchaseOrderController = {
             FROM payments 
             WHERE purchase_order_id = po.id AND deleted_at IS NULL AND status = 'completed'
           ), 0) as total_paid_amount,
-          (po.total - COALESCE((
+          (po.total_amount - COALESCE((
             SELECT SUM(amount) 
             FROM payments 
             WHERE purchase_order_id = po.id AND deleted_at IS NULL AND status = 'completed'
