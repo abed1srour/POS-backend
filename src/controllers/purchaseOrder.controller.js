@@ -100,8 +100,14 @@ export const PurchaseOrderController = {
       const dataParams = [...params, parseInt(limit), parseInt(offset)];
       const { rows } = await pool.query(dataQuery, dataParams);
       
-      // Format IDs for display
-      const formattedRows = formatResultIds(rows, 'purchase_orders');
+      // Format IDs for display and preserve calculated fields
+      const formattedRows = rows.map(row => ({
+        ...row,
+        display_id: formatId('purchase_orders', row.id),
+        // Ensure payment fields are accessible
+        total_paid_amount: parseFloat(row.total_paid_amount || 0),
+        remaining_balance: parseFloat(row.remaining_balance || 0)
+      }));
       
       res.json({
         message: "Purchase orders retrieved successfully",

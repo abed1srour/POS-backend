@@ -33,6 +33,7 @@
     "debug-products": "node scripts/debug-product-api.js",
     "fix-products": "node scripts/fix-product-data.js",
     "add-test-stock": "node scripts/add-test-stock.js",
+    "add-test-payments": "node scripts/add-test-payments.js",
 
     "render-build": "npm ci",
     "render-start": "node src/index.js",
