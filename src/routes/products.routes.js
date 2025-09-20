@@ -22,7 +22,7 @@ router.post("/",
 
 // Update product
 router.put("/:id",
-  pickBody("name", "description", "price", "cost", "stock", "category_id", "supplier_id", "sku", "barcode", "status"),
+  pickBody("name", "description", "price", "cost", "stock", "category_id", "supplier_id", "sku", "barcode", "status", "cost_price", "quantity_in_stock", "reorder_level", "image_url"),
   ProductController.update
 );
 

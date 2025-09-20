@@ -180,8 +180,10 @@ export const ProductController = {
     try {
       const { id } = req.params;
       const { 
-        name, description, price, stock, 
-        category_id, supplier_id, sku, barcode, status, cost 
+        name, description, price, stock, cost,
+        category_id, supplier_id, sku, barcode, status,
+        // Frontend field names
+        cost_price, quantity_in_stock, reorder_level, image_url
       } = req.body;
 
       const existingProduct = await ProductModel.get(id);
@@ -200,14 +202,12 @@ export const ProductController = {
         name,
         description,
         price,
-        cost_price: cost || price, // Use cost if provided, otherwise use price
-        quantity_in_stock: stock, // Map stock to quantity_in_stock
+        cost: cost || cost_price || price, // Use cost/cost_price if provided, otherwise use price
+        stock_quantity: stock || quantity_in_stock || 0, // Map stock/quantity_in_stock to stock_quantity
         category_id: category_id || null,
-        supplier_id: supplier_id || null,
-        reorder_level: 10, // Default reorder level
         sku: sku || null,
-        barcode: barcode || null,
-        status: status || 'active'
+        barcode: barcode || null
+        // Note: supplier_id, status, reorder_level, image_url are not in the current database schema
       };
 
       const product = await ProductModel.update(id, productData);
@@ -215,8 +215,9 @@ export const ProductController = {
       // Transform response to match frontend expectations
       const transformedProduct = {
         ...product,
-        stock: product.quantity_in_stock,
-        cost: product.cost_price
+        stock: product.stock_quantity,
+        cost_price: product.cost,
+        quantity_in_stock: product.stock_quantity
       };
 
       res.json({
