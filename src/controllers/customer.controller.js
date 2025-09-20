@@ -1,5 +1,6 @@
 import { Customer } from "../models/customer.model.js";
 import { pool } from "../config/db.js";
+import { formatResultIds, formatId } from "../utils/id-formatter.js";
 
 const CustomerModel = Customer;
 

@@ -26,6 +26,8 @@
     "find-columns": "node scripts/find-column-references.js",
     "check-missing": "node scripts/focused-column-check.js",
     "add-missing": "node scripts/add-missing-columns.js",
+    "migrate-to-numeric": "node scripts/migrate-to-numeric-ids.js",
+    "analyze-uuids": "node scripts/analyze-uuid-usage.js",
 
     "render-build": "npm ci",
     "render-start": "node src/index.js",

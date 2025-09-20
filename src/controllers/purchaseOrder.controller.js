@@ -1,6 +1,7 @@
 import { BaseModel } from "../models/_base.js";
 import { pool } from "../config/db.js";
 import { Product } from "../models/product.model.js";
+import { formatResultIds, formatId } from "../utils/id-formatter.js";
 
 const PurchaseOrderModel = BaseModel({
   table: "purchase_orders",
@@ -99,9 +100,12 @@ export const PurchaseOrderController = {
       const dataParams = [...params, parseInt(limit), parseInt(offset)];
       const { rows } = await pool.query(dataQuery, dataParams);
       
+      // Format IDs for display
+      const formattedRows = formatResultIds(rows, 'purchase_orders');
+      
       res.json({
         message: "Purchase orders retrieved successfully",
-        data: rows,
+        data: formattedRows,
         pagination: {
           total,
           limit: parseInt(limit),
@@ -143,12 +147,21 @@ export const PurchaseOrderController = {
         WHERE poi.purchase_order_id = $1
       `, [id]);
 
+      // Format the purchase order data
+      const formattedPurchaseOrder = {
+        ...purchaseOrder,
+        display_id: formatId('purchase_orders', purchaseOrder.id)
+      };
+      
+      // Format items if they exist
+      if (itemRows && itemRows.length > 0) {
+        const formattedItems = formatResultIds(itemRows, 'purchase_order_items');
+        formattedPurchaseOrder.items = formattedItems;
+      }
+      
       res.json({
         message: "Purchase order retrieved successfully",
-        data: {
-          ...purchaseOrder,
-          items: itemRows
-        }
+        data: formattedPurchaseOrder
       });
     } catch (error) {
       console.error("Get purchase order error:", error);
@@ -381,9 +394,15 @@ export const PurchaseOrderController = {
 
         await client.query('COMMIT');
 
+        // Format the response data
+        const formattedPurchaseOrder = {
+          ...purchaseOrder,
+          display_id: formatId('purchase_orders', purchaseOrder.id)
+        };
+        
         res.json({
           message: "Purchase order status updated successfully",
-          data: purchaseOrder
+          data: formattedPurchaseOrder
         });
 
       } catch (error) {
@@ -574,9 +593,15 @@ export const PurchaseOrderController = {
 
       const purchaseOrder = await PurchaseOrderModel.update(id, updateData);
 
+      // Format the response data
+      const formattedPurchaseOrder = {
+        ...purchaseOrder,
+        display_id: formatId('purchase_orders', purchaseOrder.id)
+      };
+      
       res.json({
         message: "Payment updated successfully",
-        data: purchaseOrder
+        data: formattedPurchaseOrder
       });
     } catch (error) {
       console.error("Update payment error:", error);

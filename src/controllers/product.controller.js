@@ -1,6 +1,7 @@
 import { BaseModel } from "../models/_base.js";
 import { pool } from "../config/db.js";
 import { Product } from "../models/product.model.js";
+import { formatResultIds, formatId } from "../utils/id-formatter.js";
 
 const ProductModel = BaseModel({
   table: "products",
@@ -55,7 +56,8 @@ export const ProductController = {
       const transformedRows = rows.map(row => ({
         ...row,
         stock: row.quantity_in_stock, // Map quantity_in_stock to stock for frontend
-        cost: row.cost_price // Map cost_price to cost for frontend
+        cost: row.cost_price, // Map cost_price to cost for frontend
+        display_id: formatId('products', row.id) // Add formatted display ID
       }));
       
       res.json({
@@ -90,7 +92,8 @@ export const ProductController = {
       const transformedProduct = {
         ...product,
         stock: product.quantity_in_stock, // Map quantity_in_stock to stock for frontend
-        cost: product.cost_price // Map cost_price to cost for frontend
+        cost: product.cost_price, // Map cost_price to cost for frontend
+        display_id: formatId('products', product.id) // Add formatted display ID
       };
 
       res.json({
@@ -151,7 +154,8 @@ export const ProductController = {
         stock: product.stock_quantity, // Map stock_quantity back to stock for frontend
         cost_price: product.cost, // Map cost back to cost_price for frontend
         quantity_in_stock: product.stock_quantity, // Also provide quantity_in_stock for frontend
-        status: product.is_active ? 'active' : 'inactive' // Map is_active back to status
+        status: product.is_active ? 'active' : 'inactive', // Map is_active back to status
+        display_id: formatId('products', product.id) // Add formatted display ID
       };
 
       res.status(201).json({
