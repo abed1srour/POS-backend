@@ -159,15 +159,10 @@ export const PurchaseOrderController = {
   // Create new purchase order
   async create(req, res) {
     try {
-      console.log("📝 Creating purchase order with data:", req.body);
-      
+
       const { 
         supplier_id, subtotal, total_discount, total, payment_method, payment_amount, balance, delivery_checked, items 
       } = req.body;
-
-      console.log("🔍 Extracted fields:", { 
-        supplier_id, subtotal, total_discount, total, payment_method, payment_amount, balance, delivery_checked, items 
-      });
 
       if (!supplier_id || !items || !Array.isArray(items) || items.length === 0) {
         console.error("❌ Validation failed:", { supplier_id, items });
@@ -182,26 +177,23 @@ export const PurchaseOrderController = {
         await client.query('BEGIN');
 
         // Create purchase order
-        const purchaseOrderData = [supplier_id, subtotal || 0, total_discount || 0, total || 0, payment_method || 'cash', payment_amount || 0, balance || 0, 'pending', delivery_checked || false];
-        
-        console.log("🗄️ Inserting purchase order with data:", purchaseOrderData);
-        
+        // Database schema: id, po_number, supplier_id, status, total_amount, order_date, expected_date, received_date, notes, created_at, updated_at
+        const poNumber = `PO-${Date.now()}`; // Generate PO number
+        const orderDate = new Date().toISOString().split('T')[0]; // Today's date
+        const purchaseOrderData = [poNumber, supplier_id, 'pending', total || 0, orderDate];
+
         const { rows: poRows } = await client.query(`
-          INSERT INTO purchase_orders (supplier_id, subtotal, total_discount, total, payment_method, payment_amount, balance, status, delivery_checked)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          INSERT INTO purchase_orders (po_number, supplier_id, status, total_amount, order_date)
+          VALUES ($1, $2, $3, $4, $5)
           RETURNING *
         `, purchaseOrderData);
 
         const purchaseOrder = poRows[0];
-        console.log("✅ Purchase order created:", purchaseOrder);
 
         // Create purchase order items
-        console.log("📦 Creating purchase order items:", items);
-        
+
         for (const item of items) {
           const { product_id, quantity, unit_price, discount_amount = 0, notes: itemNotes } = item;
-          
-          console.log("🔍 Processing item:", { product_id, quantity, unit_price, discount_amount });
 
           if (!product_id || !quantity || !unit_price) {
             console.error("❌ Invalid item data:", { product_id, quantity, unit_price });
@@ -209,7 +201,7 @@ export const PurchaseOrderController = {
           }
 
           // Verify product exists
-          console.log("🔍 Verifying product exists:", product_id);
+
           const { rows: productRows } = await client.query(`
             SELECT id FROM products WHERE id = $1
           `, [product_id]);
@@ -220,24 +212,17 @@ export const PurchaseOrderController = {
           }
 
           // Create purchase order item
-          const itemData = [purchaseOrder.id, product_id, quantity, unit_price, discount_amount];
-          console.log("🗄️ Inserting purchase order item:", itemData);
-          
+          const totalCost = unit_price * quantity;
+          const itemData = [purchaseOrder.id, product_id, quantity, unit_price, totalCost];
+
           await client.query(`
-            INSERT INTO purchase_order_items (purchase_order_id, product_id, quantity, unit_price, discount_amount)
+            INSERT INTO purchase_order_items (purchase_order_id, product_id, quantity, unit_cost, total_cost)
             VALUES ($1, $2, $3, $4, $5)
           `, itemData);
-          
-          console.log("✅ Purchase order item created for product:", product_id);
+
         }
 
         await client.query('COMMIT');
-        console.log("✅ Transaction committed successfully");
-
-        console.log("📤 Sending response:", {
-          message: "Purchase order created successfully",
-          data: purchaseOrder
-        });
 
         res.status(201).json({
           message: "Purchase order created successfully",
@@ -247,11 +232,11 @@ export const PurchaseOrderController = {
       } catch (error) {
         console.error("❌ Transaction error:", error);
         await client.query('ROLLBACK');
-        console.log("🔄 Transaction rolled back");
+
         throw error;
       } finally {
         client.release();
-        console.log("🔓 Database client released");
+
       }
 
     } catch (error) {
@@ -326,17 +311,14 @@ export const PurchaseOrderController = {
 
         // If status is being changed to 'received', update product stock with weighted average cost
         if (status === 'received') {
-          console.log(`🔄 Processing purchase order ${id} status update to 'received'`);
-          console.log(`   - Previous status: ${existingPO.status}`);
-          
+
+
           // Get purchase order items with unit prices
           const { rows: itemRows } = await client.query(`
             SELECT poi.product_id, poi.quantity, poi.unit_price 
             FROM purchase_order_items poi
             WHERE poi.purchase_order_id = $1
           `, [id]);
-          
-          console.log(`   - Found ${itemRows.length} items to process`);
 
           // Update stock for each item using weighted average cost
           for (const item of itemRows) {
@@ -352,7 +334,7 @@ export const PurchaseOrderController = {
             );
 
             if (updatedProduct) {
-              console.log(`✅ Updated product ${item.product_id} stock: +${newQuantity} units with weighted average cost $${parseFloat(updatedProduct.cost_price).toFixed(2)} (received)`);
+
             } else {
               throw new Error(`Failed to update product ${item.product_id} stock`);
             }
@@ -361,9 +343,8 @@ export const PurchaseOrderController = {
 
         // If status is being changed to 'cancelled', remove products from stock
         if (status === 'cancelled' && existingPO.status === 'received') {
-          console.log(`🔄 Processing purchase order ${id} status update to 'cancelled'`);
-          console.log(`   - Previous status: ${existingPO.status}`);
-          
+
+
           // Get purchase order items
           const { rows: itemRows } = await client.query(`
             SELECT poi.product_id, poi.quantity, poi.unit_price, p.name as product_name, p.quantity_in_stock
@@ -371,8 +352,6 @@ export const PurchaseOrderController = {
             LEFT JOIN products p ON poi.product_id = p.id
             WHERE poi.purchase_order_id = $1
           `, [id]);
-          
-          console.log(`   - Found ${itemRows.length} items to remove from stock`);
 
           // Remove stock for each item
           for (const item of itemRows) {
@@ -387,8 +366,7 @@ export const PurchaseOrderController = {
                 SET quantity_in_stock = quantity_in_stock - $1, updated_at = NOW() 
                 WHERE id = $2
               `, [quantity, productId]);
-              
-              console.log(`✅ Removed ${quantity} units from product ${productId} (${item.product_name}) - new stock: ${currentStock - quantity}`);
+
             } else {
               // If removing more than available stock, set to 0
               await client.query(`
@@ -396,8 +374,7 @@ export const PurchaseOrderController = {
                 SET quantity_in_stock = 0, updated_at = NOW() 
                 WHERE id = $1
               `, [productId]);
-              
-              console.log(`⚠️ Removed all stock from product ${productId} (${item.product_name}) - was ${currentStock}, set to 0`);
+
             }
           }
         }
@@ -491,8 +468,6 @@ export const PurchaseOrderController = {
         });
       }
 
-      console.log(`🗑️ Deleting purchase order ${id} and handling products...`);
-
       // Get purchase order items to handle product deletion/reduction
       const { rows: itemRows } = await client.query(`
         SELECT poi.product_id, poi.quantity, poi.unit_price, p.name as product_name, p.quantity_in_stock,
@@ -505,8 +480,6 @@ export const PurchaseOrderController = {
         WHERE poi.purchase_order_id = $1
       `, [id]);
 
-      console.log(`📦 Found ${itemRows.length} items to process for deletion`);
-
       // Process each item
       for (const item of itemRows) {
         const productId = item.product_id;
@@ -514,28 +487,26 @@ export const PurchaseOrderController = {
         const currentStock = parseInt(item.quantity_in_stock || 0);
         const otherOrdersCount = parseInt(item.other_orders_count || 0);
         const orderItemsCount = parseInt(item.order_items_count || 0);
-        
-        console.log(`🔍 Processing product ${productId} (${item.product_name}): current stock ${currentStock}, removing ${quantity}, other orders: ${otherOrdersCount}`);
 
         if (!productId) {
-          console.log(`⚠️ Skipping item with no product_id`);
+
           continue;
         }
 
         // Only delete the product if no other POs reference it AND it has never been used in sales (order_items)
         if (otherOrdersCount === 0 && orderItemsCount === 0) {
-          console.log(`🗑️ Deleting product ${productId} (${item.product_name}) - no other POs reference it and no sales use it`);
+
           await client.query('DELETE FROM products WHERE id = $1', [productId]);
         } else {
           // Otherwise, adjust stock safely
           if (currentStock <= quantity) {
-            console.log(`📉 Setting stock to 0 for product ${productId} (${item.product_name}) - stock will be 0`);
+
             await client.query(
               'UPDATE products SET quantity_in_stock = 0, updated_at = NOW() WHERE id = $1',
               [productId]
             );
           } else {
-            console.log(`📉 Reducing stock for product ${productId} (${item.product_name}): ${currentStock} - ${quantity} = ${currentStock - quantity}`);
+
             await client.query(
               'UPDATE products SET quantity_in_stock = quantity_in_stock - $1, updated_at = NOW() WHERE id = $2',
               [quantity, productId]
@@ -548,8 +519,6 @@ export const PurchaseOrderController = {
       await PurchaseOrderModel.remove(id);
 
       await client.query('COMMIT');
-
-      console.log(`✅ Successfully deleted purchase order ${id} and processed ${itemRows.length} products`);
 
       res.json({
         message: "Purchase order deleted successfully"

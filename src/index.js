@@ -28,8 +28,6 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000,http:/
 
 app.use(cors({
   origin: (origin, cb) => {
-    console.log(`🌐 CORS request from origin: ${origin}`);
-    console.log(`🔍 Allowed origins: ${allowedOrigins.join(', ')}`);
     
     if (!origin) return cb(null, true);                 // allow curl/Postman (no Origin)
     if (allowedOrigins.includes(origin)) return cb(null, true);
@@ -45,7 +43,6 @@ app.use(cors({
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -74,10 +71,6 @@ app.use((err, _req, res, _next) => {
 /** Start */
 app.listen(PORT, "0.0.0.0", () => {
   const started = new Date().toISOString();
-  console.log("🚀 POS System API Server Started!");
-  console.log("📍 Port:", PORT);
-  console.log("📊 Health: /health");
-  console.log("⏰ Started:", started);
   scheduleCleanup();
 });
 

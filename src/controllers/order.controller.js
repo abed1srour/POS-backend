@@ -181,9 +181,6 @@ export const OrderController = {
         // Create order items and update product stock
         for (const item of items) {
           const { product_id, quantity, price, discount = 0, discount_type = "usd" } = item;
-
-          console.log("Processing item:", { product_id, quantity, price, discount, discount_type });
-
           if (!product_id || !quantity) {
             throw new Error("Product ID and quantity are required for each item");
           }
@@ -226,15 +223,6 @@ export const OrderController = {
           if (finalDiscount > itemTotal) {
             throw new Error(`Discount cannot exceed item total for product ID ${product_id}`);
           }
-
-          console.log("Inserting order item:", {
-            order_id: order.id,
-            product_id,
-            quantity,
-            unit_price: finalUnitPrice,
-            discount: finalDiscount
-          });
-          
           await client.query(`
             INSERT INTO order_items (order_id, product_id, quantity, unit_price, discount)
             VALUES ($1, $2, $3, $4, $5)

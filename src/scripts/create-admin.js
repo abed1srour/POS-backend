@@ -2,8 +2,6 @@ import { pool } from "../config/db.js";
 import bcrypt from "bcryptjs";
 
 async function createAdmin() {
-  console.log("👤 Creating admin user...");
-  
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -15,7 +13,6 @@ async function createAdmin() {
     );
 
     if (existingAdmin.length > 0) {
-      console.log("⚠️  Admin user already exists!");
       return;
     }
 
@@ -29,13 +26,6 @@ async function createAdmin() {
     `, ['admin', 'admin@pos.com', hashedPassword, 'admin']);
 
     await client.query('COMMIT');
-    
-    console.log("✅ Admin user created successfully!");
-    console.log("📧 Email: admin@pos.com");
-    console.log("🔑 Password: admin123");
-    console.log("👤 Username: admin");
-    console.log("🔐 Role: admin");
-    
   } catch (error) {
     await client.query('ROLLBACK');
     console.error("❌ Failed to create admin user:", error);

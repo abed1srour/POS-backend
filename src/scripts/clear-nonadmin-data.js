@@ -1,7 +1,6 @@
 import { pool } from "../config/db.js";
 
 async function clearNonAdminData() {
-  console.log("⚠️ Starting data wipe (keeping admins)...");
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -23,12 +22,9 @@ async function clearNonAdminData() {
       'employees',
       'settings'
     ];
-
-    console.log('🧹 Truncating tables with CASCADE...');
     await client.query(`TRUNCATE TABLE ${truncateTables.join(', ')} RESTART IDENTITY CASCADE`);
 
     await client.query('COMMIT');
-    console.log("✅ Data wipe completed (admins preserved)");
   } catch (error) {
     await client.query('ROLLBACK');
     console.error("❌ Data wipe failed:", error);

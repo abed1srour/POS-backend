@@ -106,14 +106,12 @@ export const ProductController = {
   // Create new product
   async create(req, res) {
     try {
-      console.log("📝 Creating product with data:", req.body);
       
       const { 
         name, description, price, stock = 0, 
         category_id, supplier_id, sku, barcode, status, cost 
       } = req.body;
 
-      console.log("🔍 Debug - Extracted fields:", { name, description, price, stock, category_id, supplier_id, sku, barcode, status, cost });
 
       if (!name || !price) {
         return res.status(400).json({ 
@@ -143,11 +141,9 @@ export const ProductController = {
         // Note: supplier_id is not in the current database schema
       };
 
-      console.log("🗄️  Product data to insert:", productData);
 
       const product = await ProductModel.create(productData);
 
-      console.log("✅ Product created:", product);
 
       // Transform response to match frontend expectations
       const transformedProduct = {

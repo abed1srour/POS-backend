@@ -2,8 +2,6 @@ import { pool } from "../config/db.js";
 
 async function seedData() {
   try {
-    console.log('🌱 Starting database seeding...');
-
     // Get all tables that might have foreign key constraints
     const { rows: tables } = await pool.query(`
       SELECT table_name 
@@ -12,9 +10,6 @@ async function seedData() {
       AND table_type = 'BASE TABLE'
       ORDER BY table_name
     `);
-
-    console.log('📋 Found tables:', tables.map(t => t.table_name).join(', '));
-
     // Clear existing data in correct order (respecting foreign keys)
     // Delete in reverse dependency order
     const deleteQueries = [
@@ -33,9 +28,7 @@ async function seedData() {
     for (const query of deleteQueries) {
       try {
         await pool.query(query);
-        console.log(`✅ ${query}`);
       } catch (error) {
-        console.log(`⚠️  ${query} - ${error.message}`);
       }
     }
 
@@ -52,9 +45,7 @@ async function seedData() {
     for (const seq of sequences) {
       try {
         await pool.query(`ALTER SEQUENCE ${seq} RESTART WITH 1`);
-        console.log(`✅ Reset sequence: ${seq}`);
       } catch (error) {
-        console.log(`⚠️  Reset sequence ${seq} - ${error.message}`);
       }
     }
 
@@ -146,14 +137,6 @@ async function seedData() {
         VALUES ($1, $2, $3, $4)
       `, [orderId, totalAmount, 'cash', 'completed']);
     }
-
-    console.log('✅ Database seeded successfully!');
-    console.log('📊 Sample data added:');
-    console.log(`   - ${customers.length} customers`);
-    console.log(`   - ${products.length} products`);
-    console.log(`   - ${orderDates.length} orders with payments`);
-    console.log('🔄 Refresh your dashboard to see real data!');
-
   } catch (error) {
     console.error('❌ Error seeding database:', error);
   } finally {

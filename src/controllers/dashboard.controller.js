@@ -60,7 +60,6 @@ export const DashboardController = {
         `, params);
         currentRevenue = parseFloat(revenueRows[0].total_revenue) || 0;
       } catch (error) {
-        console.log('Revenue query error:', error.message);
         currentRevenue = 0;
       }
 
@@ -75,7 +74,6 @@ export const DashboardController = {
         `, params);
         currentOrders = parseInt(ordersRows[0].total_orders) || 0;
       } catch (error) {
-        console.log('Orders query error:', error.message);
         currentOrders = 0;
       }
 
@@ -90,7 +88,6 @@ export const DashboardController = {
         `, params);
         currentCustomers = parseInt(customersRows[0].active_customers) || 0;
       } catch (error) {
-        console.log('Customers query error:', error.message);
         currentCustomers = 0;
       }
 
@@ -106,7 +103,6 @@ export const DashboardController = {
         `, params);
         currentProducts = parseInt(productsRows[0].products_sold) || 0;
       } catch (error) {
-        console.log('Products query error:', error.message);
         currentProducts = 0;
       }
 
@@ -145,7 +141,6 @@ export const DashboardController = {
         `);
         prevRevenue = parseFloat(prevRevenueRows[0].prev_revenue) || 0;
       } catch (error) {
-        console.log('Previous revenue query error:', error.message);
       }
 
       try {
@@ -158,7 +153,6 @@ export const DashboardController = {
         `);
         prevOrders = parseInt(prevOrdersRows[0].prev_orders) || 0;
       } catch (error) {
-        console.log('Previous orders query error:', error.message);
       }
 
       try {
@@ -171,7 +165,6 @@ export const DashboardController = {
         `);
         prevCustomers = parseInt(prevCustomersRows[0].prev_customers) || 0;
       } catch (error) {
-        console.log('Previous customers query error:', error.message);
       }
 
       try {
@@ -185,7 +178,6 @@ export const DashboardController = {
         `);
         prevProducts = parseInt(prevProductsRows[0].prev_products) || 0;
       } catch (error) {
-        console.log('Previous products query error:', error.message);
       }
 
       // Calculate percentage changes
@@ -322,7 +314,6 @@ export const DashboardController = {
 
         res.json({ data: rows });
       } catch (queryError) {
-        console.log('Chart query error:', queryError.message);
         res.json({ data: [] });
       }
 
@@ -366,7 +357,6 @@ export const DashboardController = {
           `, [parseInt(limit)]);
           orderActivities = orderRows;
         } catch (error) {
-          console.log('Orders activities query error:', error.message);
         }
 
         try {
@@ -383,7 +373,6 @@ export const DashboardController = {
           `, [parseInt(limit)]);
           paymentActivities = paymentRows;
         } catch (error) {
-          console.log('Payments activities query error:', error.message);
         }
 
         try {
@@ -400,7 +389,6 @@ export const DashboardController = {
           `, [parseInt(limit)]);
           customerActivities = customerRows;
         } catch (error) {
-          console.log('Customers activities query error:', error.message);
         }
       }
 

@@ -2,8 +2,6 @@ import { pool } from "../config/db.js";
 
 async function testChart() {
   try {
-    console.log('🧪 Testing Chart Data...');
-
     // Test the exact query from dashboard controller for 7 days
     const { rows: chartData } = await pool.query(`
       SELECT 
@@ -16,11 +14,7 @@ async function testChart() {
       GROUP BY DATE(order_date)
       ORDER BY DATE(order_date)
     `);
-
-    console.log('📊 Chart Data (7 days):');
-    console.log('Number of data points:', chartData.length);
     chartData.forEach((data, index) => {
-      console.log(`   ${index + 1}. ${data.label}: $${data.value}`);
     });
 
     // Test without date filter to see all data
@@ -34,15 +28,10 @@ async function testChart() {
       GROUP BY DATE(order_date)
       ORDER BY DATE(order_date)
     `);
-
-    console.log('\n📊 All Chart Data:');
-    console.log('Number of data points:', allChartData.length);
     allChartData.forEach((data, index) => {
-      console.log(`   ${index + 1}. ${data.label}: $${data.value}`);
     });
 
     // Check order dates
-    console.log('\n📋 Order Dates:');
     const { rows: orderDates } = await pool.query(`
       SELECT order_date, total_amount, status
       FROM orders
@@ -52,7 +41,6 @@ async function testChart() {
     `);
 
     orderDates.forEach(order => {
-      console.log(`   ${order.order_date}: $${order.total_amount} (${order.status})`);
     });
 
   } catch (error) {

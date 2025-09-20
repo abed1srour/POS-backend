@@ -20,23 +20,13 @@ export const BaseModel = ({ table, idField = "id", allowed = [] }) => ({
 
   async create(data) {
     const { text, values } = buildInsert(table, allowed, data);
-    console.log("🔧 SQL Query:", text);
-    console.log("🔧 SQL Values:", values);
     const { rows } = await pool.query(text, values);
     return rows[0];
   },
 
   async update(id, data) {
-    console.log("🔧 Update called with id:", id);
-    console.log("🔧 Update called with data:", data);
-    console.log("🔧 Allowed fields:", allowed);
-    
     const { text, values } = buildUpdate(table, allowed, idField, id, data);
-    console.log("🔧 Update SQL Query:", text);
-    console.log("🔧 Update SQL Values:", values);
-    
     const { rows } = await pool.query(text, values);
-    console.log("🔧 Update result:", rows[0]);
     return rows[0] || null;
   },
 

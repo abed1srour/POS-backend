@@ -3,8 +3,6 @@ import { pool } from "../config/db.js";
 // Clean up old deleted records (older than 7 days)
 export async function cleanupOldDeletedRecords() {
   try {
-    console.log("🧹 Starting automatic cleanup of old deleted records...");
-
     // Delete products that have been in recycle bin for more than 7 days
     const productsResult = await pool.query(
       `DELETE FROM products WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '7 days'`
@@ -29,9 +27,6 @@ export async function cleanupOldDeletedRecords() {
     const categoriesResult = await pool.query(
       `DELETE FROM categories WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '7 days'`
     );
-
-    console.log(`✅ Cleanup completed: ${productsResult.rowCount} products, ${customersResult.rowCount} customers, ${ordersResult.rowCount} orders, ${paymentsResult.rowCount} payments, and ${categoriesResult.rowCount} categories permanently deleted`);
-
     return {
       productsDeleted: productsResult.rowCount,
       customersDeleted: customersResult.rowCount,
@@ -55,6 +50,4 @@ export function scheduleCleanup() {
       console.error("Scheduled cleanup failed:", error);
     }
   }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
-  
-  console.log("⏰ Scheduled cleanup task started (runs every 24 hours)");
 }

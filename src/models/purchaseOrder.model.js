@@ -5,8 +5,8 @@ export const PurchaseOrder = {
   ...BaseModel({
     table: "purchase_orders",
     allowed: [
-      "supplier_id", "subtotal", "total_discount", "total", 
-      "payment_method", "payment_amount", "balance", "status", "delivery_checked", "notes"
+      "po_number", "supplier_id", "status", "total_amount", 
+      "order_date", "expected_date", "received_date", "notes"
     ]
   }),
 
@@ -15,7 +15,7 @@ export const PurchaseOrder = {
     const purchaseOrderId = parseInt(id);
     
     const { rows } = await pool.query(
-      `SELECT po.*, s.company_name as supplier_name, s.contact_person
+      `SELECT po.*, s.name as supplier_name, s.contact_person
        FROM purchase_orders po
        LEFT JOIN suppliers s ON po.supplier_id = s.id
        WHERE po.id = $1`,
@@ -67,7 +67,7 @@ export const PurchaseOrder = {
   // Get purchase order with items
   async getWithItems(id) {
     const { rows: poRows } = await pool.query(
-      `SELECT po.*, s.company_name as supplier_name, s.contact_person
+      `SELECT po.*, s.name as supplier_name, s.contact_person
        FROM purchase_orders po
        LEFT JOIN suppliers s ON po.supplier_id = s.id
        WHERE po.id = $1`,
@@ -95,7 +95,7 @@ export const PurchaseOrder = {
   // List purchase orders with supplier info
   async list({ limit = 50, offset = 0, supplier_id = null } = {}) {
     let query = `
-      SELECT po.*, s.company_name as supplier_name, s.contact_person
+      SELECT po.*, s.name as supplier_name, s.contact_person
       FROM purchase_orders po
       LEFT JOIN suppliers s ON po.supplier_id = s.id
     `;
@@ -130,10 +130,10 @@ export const PurchaseOrder = {
     const { rows } = await pool.query(`
       SELECT 
         COUNT(*) as total_orders,
-        SUM(total) as total_amount,
-        AVG(total) as avg_order_value,
+        SUM(total_amount) as total_amount,
+        AVG(total_amount) as avg_order_value,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders
+        COUNT(CASE WHEN status = 'received' THEN 1 END) as completed_orders
       FROM purchase_orders
     `);
     return rows[0];
