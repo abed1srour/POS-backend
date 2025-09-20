@@ -53,7 +53,7 @@ export const ProductController = {
 
       const { rows } = await pool.query(query, params);
       
-      // Get total count for pagination
+      // Get total count for pagination (separate query with separate parameters)
       let countQuery = `
         SELECT COUNT(*) as total
         FROM products p 
@@ -61,6 +61,9 @@ export const ProductController = {
         LEFT JOIN suppliers s ON p.supplier_id = s.id 
         WHERE 1=1
       `;
+      
+      const countParams = [];
+      let countParamIndex = 0;
       
       // Apply same filters for count
       if (includeDeleted === 'true') {
@@ -70,16 +73,16 @@ export const ProductController = {
       }
       
       if (category_id) {
-        countQuery += ` AND p.category_id = $${params.length + 1}`;
+        countParamIndex++;
+        countQuery += ` AND p.category_id = $${countParamIndex}`;
+        countParams.push(category_id);
       }
       
       if (q) {
-        countQuery += ` AND (p.name ILIKE $${params.length + (category_id ? 2 : 1)} OR p.description ILIKE $${params.length + (category_id ? 2 : 1)} OR p.sku ILIKE $${params.length + (category_id ? 2 : 1)} OR p.barcode ILIKE $${params.length + (category_id ? 2 : 1)})`;
+        countParamIndex++;
+        countQuery += ` AND (p.name ILIKE $${countParamIndex} OR p.description ILIKE $${countParamIndex} OR p.sku ILIKE $${countParamIndex} OR p.barcode ILIKE $${countParamIndex})`;
+        countParams.push(`%${q}%`);
       }
-      
-      const countParams = [...params];
-      if (category_id) countParams.push(category_id);
-      if (q) countParams.push(`%${q}%`);
       
       const { rows: countResult } = await pool.query(countQuery, countParams);
       const total = parseInt(countResult[0].total);
